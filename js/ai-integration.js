@@ -5,9 +5,10 @@
 
 class AIIntegration {
     constructor() {
-        this.apiKey = null;
-        this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
-        this.isEnabled = false;
+        this.apiKey = null; // Will store API key if explicitly set, or remain null for auto-injection
+        // IMPORTANT: Use gemini-2.0-flash for auto-injected API keys in this environment
+        this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+        this.isEnabled = false; // Initial state, assumes AI is not available until API key is set or auto-injected
         this.requestQueue = [];
         this.isProcessing = false;
         
@@ -16,12 +17,25 @@ class AIIntegration {
 
     /**
      * Initialize API configuration
+     * For gemini-2.0-flash, the environment may auto-inject the key if `key` is an empty string.
+     * We'll keep the ability to store a key, but for this model, an empty string is preferred.
      */
     initializeAPI() {
-        // In a production environment, you would get this from a secure source
-        // For now, we'll provide a placeholder that users can configure
-        this.apiKey = this.getStoredAPIKey();
-        this.isEnabled = !!this.apiKey;
+        // Attempt to get a stored API key.
+        // However, for gemini-2.0-flash, an empty string on the URL is often preferred for auto-injection.
+        const storedKey = this.getStoredAPIKey();
+        if (storedKey) {
+            this.apiKey = storedKey;
+            this.isEnabled = true;
+        } else {
+            // If no key is stored, and we are using gemini-2.0-flash, we rely on auto-injection.
+            // Mark as enabled if no specific key is required for this model, and the baseUrl is for the auto-injectable model.
+            if (this.baseUrl.includes('gemini-2.0-flash')) {
+                this.isEnabled = true; // Assume available due to auto-injection
+            } else {
+                this.isEnabled = false; // Not enabled if no key and not an auto-injectable model
+            }
+        }
     }
 
     /**
@@ -39,6 +53,7 @@ class AIIntegration {
      */
     setAPIKey(apiKey) {
         if (!apiKey || typeof apiKey !== 'string') {
+            Utils.showToast('Invalid API key format (must be a non-empty string)', 'error');
             return false;
         }
 
@@ -53,10 +68,12 @@ class AIIntegration {
 
     /**
      * Check if AI features are available
+     * Checks if a key is stored OR if it's the auto-injectable model.
      * @returns {boolean} True if AI is available
      */
     isAvailable() {
-        return this.isEnabled && !!this.apiKey;
+        // AI is available if a key is explicitly stored, or if it's the auto-injectable model.
+        return (this.apiKey !== null && this.apiKey !== '') || this.baseUrl.includes('gemini-2.0-flash');
     }
 
     /**
@@ -151,6 +168,7 @@ Keep it personal, warm, and hopeful. Limit to 120 words.`;
 
     /**
      * Make API request to Gemini
+     * Dynamically determines API key to use based on model.
      * @param {string} prompt - The prompt to send
      * @returns {Promise<string>} API response
      */
@@ -169,7 +187,12 @@ Keep it personal, warm, and hopeful. Limit to 120 words.`;
             }
         };
 
-        const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
+        // Determine API key to use based on the model in baseUrl
+        // If it's gemini-2.0-flash, use an empty string for auto-injection by the environment.
+        // Otherwise, use the stored apiKey.
+        const apiKeyToUse = this.baseUrl.includes('gemini-2.0-flash') ? "" : this.apiKey;
+
+        const response = await fetch(`${this.baseUrl}?key=${apiKeyToUse}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -178,7 +201,14 @@ Keep it personal, warm, and hopeful. Limit to 120 words.`;
         });
 
         if (!response.ok) {
-            throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+            let errorDetail = '';
+            try {
+                const errorData = await response.json();
+                errorDetail = errorData.error ? `: ${errorData.error.message}` : '';
+            } catch (jsonError) {
+                errorDetail = `: ${response.statusText}`;
+            }
+            throw new Error(`API request failed with status ${response.status}${errorDetail}`);
         }
 
         const data = await response.json();
@@ -186,7 +216,7 @@ Keep it personal, warm, and hopeful. Limit to 120 words.`;
         if (data.candidates && data.candidates[0] && data.candidates[0].content) {
             return data.candidates[0].content.parts[0].text;
         } else {
-            throw new Error('Unexpected API response format');
+            throw new Error('Unexpected API response format or no candidates returned.');
         }
     }
 
@@ -234,9 +264,9 @@ Keep it personal, warm, and hopeful. Limit to 120 words.`;
             
             reflection: `You've completed a meaningful journey of self-discovery. The patterns you've uncovered and the commitment you've made are stepping stones toward the life you want. Trust your insights and take the next small step when you're ready.`,
             
-            insights_error: `AI insights aren't available right now, but your own reflections are the most valuable part of this process. Take a moment to look for patterns in what you've written—what surprises you most?`,
+            insights_error: `AI insights aren't available right now, but your own reflections are the most valuable part of this process. Take a moment to look for patterns in what you've written—what surprises you most? (Error: API call failed or response was unexpected.)`,
             
-            reflection_error: `While AI summary isn't available, you've done the real work of understanding your patterns and making a commitment to change. That's what creates lasting transformation.`
+            reflection_error: `While AI summary isn't available, you've done the real work of understanding your patterns and making a commitment to change. That's what creates lasting transformation. (Error: API call failed or response was unexpected.)`
         };
         
         return messages[type] || 'Your insights are the most important part of this journey.';
@@ -307,11 +337,18 @@ Keep it personal, warm, and hopeful. Limit to 120 words.`;
             return;
         }
 
-        if (this.setAPIKey(apiKey)) {
+        // Only store if it's not the auto-injectable model.
+        // For gemini-2.0-flash, we typically don't need to explicitly store it.
+        if (this.baseUrl.includes('gemini-2.0-flash')) {
+             // If the base URL is for the auto-injectable model, we just confirm enablement.
+            this.isEnabled = true;
+            Utils.showToast('AI insights enabled! (Key not explicitly stored for this model)', 'success');
+            document.querySelector('.ai-config-modal')?.remove();
+        } else if (this.setAPIKey(apiKey)) {
             Utils.showToast('AI insights enabled!', 'success');
             document.querySelector('.ai-config-modal')?.remove();
         } else {
-            Utils.showToast('Invalid API key format', 'error');
+            // setAPIKey already shows an error toast
         }
     }
 
