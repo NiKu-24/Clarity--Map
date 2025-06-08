@@ -1,600 +1,56 @@
-            <div class="input-group">
-                <label for="successMetrics">How will you know you've succeeded? (Specific, measurable indicators)</label>
-                <textarea id="successMetrics" placeholder="e.g., 'I feel energized by 3 PM most days,' 'I'm completing my most important task by noon,' 'I have 2 evenings per week completely free.'"></textarea>
-            </div>
+/**
+ * CLARITY MAP - MAIN APPLICATION
+ * Core application logic and section management
+ */
 
-            <div class="reality-check">
-                <h3>Reality Check Your Goal</h3>
-                <p>Let's make sure this goal fits your actual life:</p>
-                <div class="goal-criteria">
-                    <div class="criteria-item">
-                        <strong>Realistic:</strong> Can you actually do this with your current energy and time?
-                    </div>
-                    <div class="criteria-item">
-                        <strong>Connected:</strong> Does it address the pattern you identified in your map?
-                    </div>
-                    <div class="criteria-item">
-                        <strong>Yours:</strong> Is this what YOU want, not what you think you should want?
-                    </div>
-                </div>
-            </div>
-
-            <div class="input-group">
-                <label for="potentialObstacles">What potential obstacles might arise, and how will you address them?</label>
-                <textarea id="potentialObstacles" placeholder="Think about your energy drainers and patterns. How can you anticipate and mitigate them?"></textarea>
-            </div>
-
-            <div class="section-nav">
-                <button class="btn btn-secondary" onclick="app.showSection('patterns')">← Back</button>
-                <button class="btn" onclick="app.showSection('roadmap')">Create Your Roadmap →</button>
-            </div>
-        `;
+class ClarityMapApp {
+    constructor() {
+        this.currentSection = 'welcome';
+        this.sections = [
+            'welcome', 'focus', 'influences', 'connections', 
+            'mapping', 'patterns', 'goals', 'roadmap', 'commitment'
+        ];
+        
+        // Initialize core systems
+        this.journalData = new JournalDataManager();
+        this.aiIntegration = new AIIntegration();
+        this.mappingSystem = new MappingSystem();
+        this.progressTracker = new ProgressTracker();
+        
+        this.init();
     }
 
     /**
-     * Get roadmap section content
-     * @returns {string} HTML content
+     * Initialize the application
      */
-    getRoadmapContent() {
-        return `
-            <h2>Create Your Roadmap</h2>
-            <div class="roadmap-intro">
-                <p>A roadmap isn't a rigid plan, but a flexible guide. It helps you take your big goal and break it into manageable steps, focusing on actions that leverage your system for positive change.</p>
-            </div>
-
-            <div class="insights-box">
-                <h3>Small, Consistent Shifts</h3>
-                <p>Remember, systems change through consistent, small adjustments, not massive overhauls. Focus on the next few steps.</p>
-            </div>
-
-            <div class="input-group">
-                <label for="roadmapGoal">Your Goal:</label>
-                <input type="text" id="roadmapGoal" readonly>
-            </div>
-
-            <div class="roadmap-columns">
-                <div class="roadmap-column now-column">
-                    <h4>NOW (Start This Week)</h4>
-                    <p>Tiny shifts you can make immediately. They should feel almost too easy—that's the point.</p>
-                    <div class="input-group">
-                        <label for="nowAction">Your tiny shift:</label>
-                        <textarea id="nowAction" placeholder="What's one small thing you could change this week?"></textarea>
-                    </div>
-                </div>
-                
-                <div class="roadmap-column experiment-column">
-                    <h4>EXPERIMENT (Next Month)</h4>
-                    <p>Slightly bigger changes you want to test. Think of them as experiments, not commitments.</p>
-                    <div class="input-group">
-                        <label for="experimentAction">Experiment 1:</label>
-                        <textarea id="experimentAction" placeholder="What boundary or routine would support your goal?"></textarea>
-                    </div>
-                </div>
-                
-                <div class="roadmap-column later-column">
-                    <h4>LATER (When You Have Capacity)</h4>
-                    <p>Bigger changes or dreams that emerged from your mapping process.</p>
-                    <div class="input-group">
-                        <label for="laterAction">Later goal:</label>
-                        <textarea id="laterAction" placeholder="What bigger change does your system map point toward?"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div class="weekly-checkin">
-                <h3>Your Weekly Check-In Questions</h3>
-                <p>At the end of each week, spend 5 minutes with these questions:</p>
-                <ul class="checkin-questions">
-                    <li>What did I actually do from my NOW column?</li>
-                    <li>What did I learn about my system this week?</li>
-                    <li>What's one small adjustment I want to make for next week?</li>
-                    <li>What am I ready to move from EXPERIMENT to NOW, or from LATER to EXPERIMENT?</li>
-                </ul>
-            </div>
-
-            <div class="input-group">
-                <label for="flexibilityPlan">How will you build flexibility into your roadmap?</label>
-                <textarea id="flexibilityPlan" placeholder="What's your plan for when things don't go perfectly?"></textarea>
-            </div>
-
-            <div class="input-group">
-                <label for="supportSystem">Who or what is your support system for this journey?</label>
-                <textarea id="supportSystem" placeholder="People, resources, practices..."></textarea>
-            </div>
-
-            <div class="section-nav">
-                <button class="btn btn-secondary" onclick="app.showSection('goals')">← Back</button>
-                <button class="btn" onclick="app.showSection('commitment')">Anchor Your Commitment →</button>
-            </div>
-        `;
+    init() {
+        this.renderNavigation();
+        this.loadCurrentSection();
+        this.bindGlobalEvents();
+        this.setupAutoSave();
+        this.setupKeyboardShortcuts();
+        
+        console.log('Clarity Map application initialized');
     }
 
     /**
-     * Get commitment section content
-     * @returns {string} HTML content
+     * Load the current section from saved data or default
      */
-    getCommitmentContent() {
-        return `
-            <h2>Anchor Your Commitment</h2>
-            <div class="commitment-intro">
-                <p>You've done the deep work. You've mapped your system, identified your leverage point, set a clear goal, and outlined your roadmap. Now, let's anchor this commitment to yourself.</p>
-            </div>
-
-            <div class="commitment-card">
-                <h3>Your Personal Clarity Pledge</h3>
-                <p>"I, <span id="pledgeName">[Your Name]</span>, commit to the journey of understanding and intentionally shifting my system. I will focus on my leverage point, knowing that small, consistent actions create powerful ripple effects. I trust my inner wisdom and am ready to embrace the clarity that unfolds."</p>
-                
-                <div class="input-group">
-                    <label for="yourName">Your Name:</label>
-                    <input type="text" id="yourName" placeholder="Type your name here">
-                </div>
-            </div>
-
-            <div class="commitment-foundation">
-                <h3>Before you commit, let's ground it in what you've discovered:</h3>
-
-                <div class="input-group">
-                    <label for="commitmentFoundation">From your mapping work, what's the one insight that surprised you most?</label>
-                    <textarea id="commitmentFoundation" placeholder="What connection or pattern did you discover?"></textarea>
-                </div>
-
-                <div class="input-group">
-                    <label for="patternToInterrupt">What pattern or loop are you ready to interrupt?</label>
-                    <textarea id="patternToInterrupt" placeholder="What cycle do you want to change?"></textarea>
-                </div>
-
-                <div class="input-group">
-                    <label for="nowColumnImportant">From your roadmap, what's the one thing in your NOW column that feels most important?</label>
-                    <textarea id="nowColumnImportant" placeholder="What small change are you most ready to make?"></textarea>
-                </div>
-
-                <div class="input-group">
-                    <label for="whatToGain">What will you gain by making this change? (Not what you think you should gain, but what you actually want.)</label>
-                    <textarea id="whatToGain" placeholder="How will this change improve your life?"></textarea>
-                </div>
-            </div>
-
-            <div class="commitment-guidelines">
-                <h4>Craft Your Commitment</h4>
-                <p>Now, write your commitment in your own words:</p>
-                <ul>
-                    <li>Start with "I commit to..."</li>
-                    <li>Be specific about what you'll do, not just what you'll stop doing</li>
-                    <li>Include why it matters to you</li>
-                    <li>Make it something you can imagine saying to a trusted friend</li>
-                </ul>
-            </div>
-
-            <div class="input-group">
-                <label for="commitmentText">My Commitment:</label>
-                <textarea id="commitmentText" placeholder="I commit to..." required></textarea>
-            </div>
-
-            <div class="input-group">
-                <label for="whenHard">When this gets hard (and it will), I will remember that:</label>
-                <textarea id="whenHard" placeholder="What will help you stay connected to your intention when things get difficult?"></textarea>
-            </div>
-
-            <div class="support-system">
-                <h3>Your Support System</h3>
-
-                <div class="input-group">
-                    <label for="supportWho">Who in your life will cheer you on without judgment?</label>
-                    <textarea id="supportWho" placeholder="Think of people who support your growth..."></textarea>
-                </div>
-
-                <div class="input-group">
-                    <label for="supportEnvironment">What environment or space helps you feel most like yourself?</label>
-                    <textarea id="supportEnvironment" placeholder="Where do you feel grounded and authentic?"></textarea>
-                </div>
-
-                <div class="input-group">
-                    <label for="whenStumble">What will you do when you inevitably stumble? (Because you're human, and humans stumble.)</label>
-                    <textarea id="whenStumble" placeholder="How will you practice self-compassion and get back on track?"></textarea>
-                </div>
-
-                <div class="input-group">
-                    <label for="reminderRitual">What reminder or ritual will help you stay connected to your intention?</label>
-                    <textarea id="reminderRitual" placeholder="A photo on your phone, a weekly walk, a note in your planner..."></textarea>
-                </div>
-            </div>
-
-            <div class="signature-area">
-                <div class="input-group">
-                    <label for="signatureDate">Date:</label>
-                    <input type="date" id="signatureDate">
-                </div>
-                
-                <div class="input-group">
-                    <label for="oneWord">One word that captures how this feels:</label>
-                    <input type="text" id="oneWord" placeholder="Hopeful? Empowered? Ready?">
-                </div>
-            </div>
-
-            <div class="input-group">
-                <label for="finalReflection">Final Reflection:</label>
-                <textarea id="finalReflection" placeholder="What's one last insight or feeling you want to capture about this process?"></textarea>
-            </div>
-
-            <div style="text-align: center; margin: 30px 0;">
-                <button class="btn" onclick="app.summarizeReflection()">✨ Summarize My Journey ✨</button>
-                <div id="summaryInsight" class="ai-response-box" style="display: none;"></div>
-            </div>
-
-            <div class="final-reflection">
-                <h3>Congratulations!</h3>
-                <p>You've completed your Clarity Map. This isn't a one-time exercise; it's a living document. Revisit it whenever you feel stuck or need to re-align. Your clarity will deepen with each reflection.</p>
-            </div>
-
-            <div class="section-nav">
-                <button class="btn btn-secondary" onclick="app.showSection('roadmap')">← Back</button>
-                <button class="btn" onclick="app.showSection('welcome')">Start Over</button>
-                <button class="btn btn-secondary" onclick="app.exportJournal()">Export Journal</button>
-            </div>
-        `;
-    }
-
-    /**
-     * Initialize section-specific features
-     * @param {string} sectionId - Section ID
-     */
-    initializeSectionFeatures(sectionId) {
-        switch (sectionId) {
-            case 'mapping':
-                this.populateMapElements();
-                break;
-            case 'commitment':
-                this.setupNameUpdater();
-                this.setCurrentDate();
-                break;
+    loadCurrentSection() {
+        const savedSection = this.journalData.getCurrentSection();
+        if (this.sections.includes(savedSection)) {
+            this.currentSection = savedSection;
         }
+        this.showSection(this.currentSection);
     }
 
     /**
-     * Populate section with saved data
-     * @param {string} sectionId - Section ID
+     * Render the navigation buttons
      */
-    populateSectionData(sectionId) {
-        const sectionData = this.journalData.getSection(sectionId);
-        
-        // Auto-populate from previous sections
-        this.journalData.setupAutoPopulation(sectionId);
-        
-        // Populate saved data
-        Object.keys(sectionData).forEach(fieldId => {
-            const element = Utils.getElementById(fieldId);
-            const value = sectionData[fieldId];
-            
-            if (element && value !== undefined) {
-                if (element.type === 'checkbox') {
-                    element.checked = value;
-                } else if (element.tagName === 'SELECT') {
-                    element.value = value;
-                } else if (fieldId === 'lifeAreas' && Array.isArray(value)) {
-                    // Handle checkbox groups
-                    value.forEach(area => {
-                        const checkbox = Utils.getElementById(`area-${area}`);
-                        if (checkbox) checkbox.checked = true;
-                    });
-                } else {
-                    element.value = value;
-                }
-            }
-        });
-    }
-
-    /**
-     * Save current section data
-     */
-    saveCurrentSectionData() {
-        const section = Utils.getElementById(this.currentSection);
-        if (!section) return;
-
-        const sectionData = {};
-        const inputs = section.querySelectorAll('input, textarea, select');
-        
-        inputs.forEach(input => {
-            if (input.id) {
-                if (input.type === 'checkbox') {
-                    if (input.name === 'lifeAreas') {
-                        // Handle checkbox groups
-                        if (!sectionData.lifeAreas) sectionData.lifeAreas = [];
-                        if (input.checked) {
-                            sectionData.lifeAreas.push(input.value);
-                        }
-                    } else {
-                        sectionData[input.id] = input.checked;
-                    }
-                } else {
-                    sectionData[input.id] = input.value;
-                }
-            }
-        });
-
-        this.journalData.saveSection(this.currentSection, sectionData);
-    }
-
-    /**
-     * Populate map elements in mapping section
-     */
-    populateMapElements() {
-        const mapEnergyGivers = document.getElementById('mapEnergyGivers');
-        const mapEnergyDrainers = document.getElementById('mapEnergyDrainers');
-        const mapPattern = document.getElementById('mapPattern');
-        
-        if (mapEnergyGivers) {
-            const giver1 = this.journalData.getField('connections', 'energyGiver1');
-            const giver2 = this.journalData.getField('connections', 'energyGiver2');
-            mapEnergyGivers.textContent = [giver1, giver2].filter(Boolean).join(', ');
-        }
-        
-        if (mapEnergyDrainers) {
-            const drainer1 = this.journalData.getField('connections', 'energyDrainer1');
-            const drainer2 = this.journalData.getField('connections', 'energyDrainer2');
-            mapEnergyDrainers.textContent = [drainer1, drainer2].filter(Boolean).join(', ');
-        }
-        
-        if (mapPattern) {
-            const pattern = this.journalData.getField('connections', 'strongestPattern');
-            mapPattern.textContent = pattern;
-        }
-    }
-
-    /**
-     * Setup name updater for commitment section
-     */
-    setupNameUpdater() {
-        const nameInput = Utils.getElementById('yourName');
-        const pledgeName = Utils.getElementById('pledgeName');
-        
-        if (nameInput && pledgeName) {
-            nameInput.addEventListener('input', () => {
-                pledgeName.textContent = nameInput.value || '[Your Name]';
-            });
-            
-            // Set initial value if exists
-            const savedName = this.journalData.getField('commitment', 'yourName');
-            if (savedName) {
-                nameInput.value = savedName;
-                pledgeName.textContent = savedName;
-            }
-        }
-    }
-
-    /**
-     * Set current date in commitment section
-     */
-    setCurrentDate() {
-        const dateInput = Utils.getElementById('signatureDate');
-        if (dateInput && !dateInput.value) {
-            dateInput.value = new Date().toISOString().split('T')[0];
-        }
-    }
-
-    /**
-     * Update active navigation button
-     */
-    updateActiveNavButton() {
-        const navButtons = document.querySelectorAll('.nav-btn');
-        navButtons.forEach(button => {
-            button.classList.remove('active');
-            if (button.onclick && button.onclick.toString().includes(this.currentSection)) {
-                button.classList.add('active');
-            }
-        });
-    }
-
-    /**
-     * Bind global event handlers
-     */
-    bindGlobalEvents() {
-        // Auto-save on form changes
-        document.addEventListener('input', Utils.debounce((event) => {
-            if (event.target.matches('input, textarea, select')) {
-                this.handleFieldChange(event.target);
-            }
-        }, 1000));
-
-        // Handle form submissions
-        document.addEventListener('submit', (event) => {
-            event.preventDefault();
-        });
-
-        // Handle window beforeunload
-        window.addEventListener('beforeunload', () => {
-            this.saveCurrentSectionData();
-        });
-    }
-
-    /**
-     * Handle individual field changes
-     * @param {HTMLElement} field - Changed field
-     */
-    handleFieldChange(field) {
-        if (!field.id) return;
-        
-        let value = field.value;
-        if (field.type === 'checkbox') {
-            value = field.checked;
-        }
-        
-        this.journalData.saveField(this.currentSection, field.id, value);
-    }
-
-    /**
-     * Setup auto-save functionality
-     */
-    setupAutoSave() {
-        // Auto-save every 30 seconds
-        setInterval(() => {
-            this.saveCurrentSectionData();
-        }, 30000);
-    }
-
-    /**
-     * Setup keyboard shortcuts
-     */
-    setupKeyboardShortcuts() {
-        document.addEventListener('keydown', (event) => {
-            // Only handle shortcuts when not in input fields
-            if (event.target.matches('input, textarea, select')) return;
-            
-            if (event.ctrlKey || event.metaKey) {
-                switch (event.key) {
-                    case 's':
-                        event.preventDefault();
-                        this.saveCurrentSectionData();
-                        Utils.showToast('Progress saved!', 'success', 2000);
-                        break;
-                    case 'ArrowRight':
-                        event.preventDefault();
-                        this.navigateNext();
-                        break;
-                    case 'ArrowLeft':
-                        event.preventDefault();
-                        this.navigatePrevious();
-                        break;
-                }
-            }
-        });
-    }
-
-    /**
-     * Navigate to next section
-     */
-    navigateNext() {
-        const nextSection = this.progressTracker.goToNextSection();
-        if (nextSection) {
-            this.showSection(nextSection);
-        }
-    }
-
-    /**
-     * Navigate to previous section
-     */
-    navigatePrevious() {
-        const prevSection = this.progressTracker.goToPreviousSection();
-        if (prevSection) {
-            this.showSection(prevSection);
-        }
-    }
-
-    /**
-     * Dispatch section change event
-     * @param {string} sectionId - New section ID
-     */
-    dispatchSectionChangeEvent(sectionId) {
-        const event = new CustomEvent('sectionChange', {
-            detail: { sectionId, timestamp: new Date() }
-        });
-        window.dispatchEvent(event);
-    }
-
-    /**
-     * Generate interactive map
-     */
-    generateMap() {
-        const mappingData = this.journalData.getSection('mapping');
-        this.mappingSystem.generateMap(mappingData);
-    }
-
-    /**
-     * Select pattern card
-     * @param {string} patternId - Pattern identifier
-     */
-    selectPattern(patternId) {
-        // Remove previous selections
-        document.querySelectorAll('.pattern-card').forEach(card => {
-            card.classList.remove('selected');
-        });
-        
-        // Select new pattern
-        const selectedCard = document.querySelector(`[onclick*="${patternId}"]`);
-        if (selectedCard) {
-            selectedCard.classList.add('selected');
-        }
-        
-        // Save selection
-        this.journalData.saveField('patterns', 'selectedPattern', patternId);
-    }
-
-    /**
-     * Uncover hidden patterns using AI
-     */
-    async uncoverHiddenPatterns() {
-        const influencesData = this.journalData.getSection('influences');
-        const targetElement = Utils.getElementById('patternsInsight');
-        
-        this.aiIntegration.handleAIButtonClick(
-            () => this.aiIntegration.generateInfluencesInsights(influencesData),
-            targetElement
-        );
-    }
-
-    /**
-     * Summarize reflection using AI
-     */
-    async summarizeReflection() {
-        const journalData = this.journalData.data;
-        const targetElement = Utils.getElementById('summaryInsight');
-        
-        this.aiIntegration.handleAIButtonClick(
-            () => this.aiIntegration.generateFinalReflection(journalData),
-            targetElement
-        );
-    }
-
-    /**
-     * Export journal data
-     */
-    exportJournal() {
-        try {
-            const exportData = this.journalData.exportData('text');
-            const blob = new Blob([exportData], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `clarity-map-${new Date().toISOString().split('T')[0]}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            Utils.showToast('Journal exported successfully!', 'success');
-        } catch (error) {
-            console.error('Export failed:', error);
-            Utils.showToast('Export failed. Please try again.', 'error');
-        }
-    }
-
-    /**
-     * Show progress modal
-     */
-    showProgress() {
-        this.progressTracker.showProgressModal();
-    }
-
-    /**
-     * Reset all data (with confirmation)
-     */
-    resetJournal() {
-        if (confirm('Are you sure you want to reset all your journal data? This cannot be undone.')) {
-            this.journalData.clearAllData();
-            this.progressTracker.resetProgress();
-            this.showSection('welcome');
-            Utils.showToast('Journal reset successfully.', 'info');
-        }
-    }
-}
-
-// Initialize app when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    window.app = new ClarityMapApp();
-});
-
-// Make app available globally for onclick handlers
-window.ClarityMapApp = ClarityMapApp;
+    renderNavigation() {
+        const navigation = Utils.getElementById('navigation');
+        if (!navigation) {
+            console.error('Navigation element not found');
             return;
         }
 
@@ -1261,56 +717,599 @@ window.ClarityMapApp = ClarityMapApp;
             </div>
 
             <div class="input-group">
-                <label for="successMetrics">/**
- * CLARITY MAP - MAIN APPLICATION
- * Core application logic and section management
- */
+                <label for="successMetrics">How will you know you've succeeded? (Specific, measurable indicators)</label>
+                <textarea id="successMetrics" placeholder="e.g., 'I feel energized by 3 PM most days,' 'I'm completing my most important task by noon,' 'I have 2 evenings per week completely free.'"></textarea>
+            </div>
 
-class ClarityMapApp {
-    constructor() {
-        this.currentSection = 'welcome';
-        this.sections = [
-            'welcome', 'focus', 'influences', 'connections', 
-            'mapping', 'patterns', 'goals', 'roadmap', 'commitment'
-        ];
-        
-        // Initialize core systems
-        this.journalData = new JournalDataManager();
-        this.aiIntegration = new AIIntegration();
-        this.mappingSystem = new MappingSystem();
-        this.progressTracker = new ProgressTracker();
-        
-        this.init();
+            <div class="reality-check">
+                <h3>Reality Check Your Goal</h3>
+                <p>Let's make sure this goal fits your actual life:</p>
+                <div class="goal-criteria">
+                    <div class="criteria-item">
+                        <strong>Realistic:</strong> Can you actually do this with your current energy and time?
+                    </div>
+                    <div class="criteria-item">
+                        <strong>Connected:</strong> Does it address the pattern you identified in your map?
+                    </div>
+                    <div class="criteria-item">
+                        <strong>Yours:</strong> Is this what YOU want, not what you think you should want?
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="potentialObstacles">What potential obstacles might arise, and how will you address them?</label>
+                <textarea id="potentialObstacles" placeholder="Think about your energy drainers and patterns. How can you anticipate and mitigate them?"></textarea>
+            </div>
+
+            <div class="section-nav">
+                <button class="btn btn-secondary" onclick="app.showSection('patterns')">← Back</button>
+                <button class="btn" onclick="app.showSection('roadmap')">Create Your Roadmap →</button>
+            </div>
+        `;
     }
 
     /**
-     * Initialize the application
+     * Get roadmap section content
+     * @returns {string} HTML content
      */
-    init() {
-        this.renderNavigation();
-        this.loadCurrentSection();
-        this.bindGlobalEvents();
-        this.setupAutoSave();
-        this.setupKeyboardShortcuts();
-        
-        console.log('Clarity Map application initialized');
+    getRoadmapContent() {
+        return `
+            <h2>Create Your Roadmap</h2>
+            <div class="roadmap-intro">
+                <p>A roadmap isn't a rigid plan, but a flexible guide. It helps you take your big goal and break it into manageable steps, focusing on actions that leverage your system for positive change.</p>
+            </div>
+
+            <div class="insights-box">
+                <h3>Small, Consistent Shifts</h3>
+                <p>Remember, systems change through consistent, small adjustments, not massive overhauls. Focus on the next few steps.</p>
+            </div>
+
+            <div class="input-group">
+                <label for="roadmapGoal">Your Goal:</label>
+                <input type="text" id="roadmapGoal" readonly>
+            </div>
+
+            <div class="roadmap-columns">
+                <div class="roadmap-column now-column">
+                    <h4>NOW (Start This Week)</h4>
+                    <p>Tiny shifts you can make immediately. They should feel almost too easy—that's the point.</p>
+                    <div class="input-group">
+                        <label for="nowAction">Your tiny shift:</label>
+                        <textarea id="nowAction" placeholder="What's one small thing you could change this week?"></textarea>
+                    </div>
+                </div>
+                
+                <div class="roadmap-column experiment-column">
+                    <h4>EXPERIMENT (Next Month)</h4>
+                    <p>Slightly bigger changes you want to test. Think of them as experiments, not commitments.</p>
+                    <div class="input-group">
+                        <label for="experimentAction">Experiment 1:</label>
+                        <textarea id="experimentAction" placeholder="What boundary or routine would support your goal?"></textarea>
+                    </div>
+                </div>
+                
+                <div class="roadmap-column later-column">
+                    <h4>LATER (When You Have Capacity)</h4>
+                    <p>Bigger changes or dreams that emerged from your mapping process.</p>
+                    <div class="input-group">
+                        <label for="laterAction">Later goal:</label>
+                        <textarea id="laterAction" placeholder="What bigger change does your system map point toward?"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="weekly-checkin">
+                <h3>Your Weekly Check-In Questions</h3>
+                <p>At the end of each week, spend 5 minutes with these questions:</p>
+                <ul class="checkin-questions">
+                    <li>What did I actually do from my NOW column?</li>
+                    <li>What did I learn about my system this week?</li>
+                    <li>What's one small adjustment I want to make for next week?</li>
+                    <li>What am I ready to move from EXPERIMENT to NOW, or from LATER to EXPERIMENT?</li>
+                </ul>
+            </div>
+
+            <div class="input-group">
+                <label for="flexibilityPlan">How will you build flexibility into your roadmap?</label>
+                <textarea id="flexibilityPlan" placeholder="What's your plan for when things don't go perfectly?"></textarea>
+            </div>
+
+            <div class="input-group">
+                <label for="supportSystem">Who or what is your support system for this journey?</label>
+                <textarea id="supportSystem" placeholder="People, resources, practices..."></textarea>
+            </div>
+
+            <div class="section-nav">
+                <button class="btn btn-secondary" onclick="app.showSection('goals')">← Back</button>
+                <button class="btn" onclick="app.showSection('commitment')">Anchor Your Commitment →</button>
+            </div>
+        `;
     }
 
     /**
-     * Load the current section from saved data or default
+     * Get commitment section content
+     * @returns {string} HTML content
      */
-    loadCurrentSection() {
-        const savedSection = this.journalData.getCurrentSection();
-        if (this.sections.includes(savedSection)) {
-            this.currentSection = savedSection;
+    getCommitmentContent() {
+        return `
+            <h2>Anchor Your Commitment</h2>
+            <div class="commitment-intro">
+                <p>You've done the deep work. You've mapped your system, identified your leverage point, set a clear goal, and outlined your roadmap. Now, let's anchor this commitment to yourself.</p>
+            </div>
+
+            <div class="commitment-card">
+                <h3>Your Personal Clarity Pledge</h3>
+                <p>"I, <span id="pledgeName">[Your Name]</span>, commit to the journey of understanding and intentionally shifting my system. I will focus on my leverage point, knowing that small, consistent actions create powerful ripple effects. I trust my inner wisdom and am ready to embrace the clarity that unfolds."</p>
+                
+                <div class="input-group">
+                    <label for="yourName">Your Name:</label>
+                    <input type="text" id="yourName" placeholder="Type your name here">
+                </div>
+            </div>
+
+            <div class="commitment-foundation">
+                <h3>Before you commit, let's ground it in what you've discovered:</h3>
+
+                <div class="input-group">
+                    <label for="commitmentFoundation">From your mapping work, what's the one insight that surprised you most?</label>
+                    <textarea id="commitmentFoundation" placeholder="What connection or pattern did you discover?"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="patternToInterrupt">What pattern or loop are you ready to interrupt?</label>
+                    <textarea id="patternToInterrupt" placeholder="What cycle do you want to change?"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="nowColumnImportant">From your roadmap, what's the one thing in your NOW column that feels most important?</label>
+                    <textarea id="nowColumnImportant" placeholder="What small change are you most ready to make?"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="whatToGain">What will you gain by making this change? (Not what you think you should gain, but what you actually want.)</label>
+                    <textarea id="whatToGain" placeholder="How will this change improve your life?"></textarea>
+                </div>
+            </div>
+
+            <div class="commitment-guidelines">
+                <h4>Craft Your Commitment</h4>
+                <p>Now, write your commitment in your own words:</p>
+                <ul>
+                    <li>Start with "I commit to..."</li>
+                    <li>Be specific about what you'll do, not just what you'll stop doing</li>
+                    <li>Include why it matters to you</li>
+                    <li>Make it something you can imagine saying to a trusted friend</li>
+                </ul>
+            </div>
+
+            <div class="input-group">
+                <label for="commitmentText">My Commitment:</label>
+                <textarea id="commitmentText" placeholder="I commit to..." required></textarea>
+            </div>
+
+            <div class="input-group">
+                <label for="whenHard">When this gets hard (and it will), I will remember that:</label>
+                <textarea id="whenHard" placeholder="What will help you stay connected to your intention when things get difficult?"></textarea>
+            </div>
+
+            <div class="support-system">
+                <h3>Your Support System</h3>
+
+                <div class="input-group">
+                    <label for="supportWho">Who in your life will cheer you on without judgment?</label>
+                    <textarea id="supportWho" placeholder="Think of people who support your growth..."></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="supportEnvironment">What environment or space helps you feel most like yourself?</label>
+                    <textarea id="supportEnvironment" placeholder="Where do you feel grounded and authentic?"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="whenStumble">What will you do when you inevitably stumble? (Because you're human, and humans stumble.)</label>
+                    <textarea id="whenStumble" placeholder="How will you practice self-compassion and get back on track?"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="reminderRitual">What reminder or ritual will help you stay connected to your intention?</label>
+                    <textarea id="reminderRitual" placeholder="A photo on your phone, a weekly walk, a note in your planner..."></textarea>
+                </div>
+            </div>
+
+            <div class="signature-area">
+                <div class="input-group">
+                    <label for="signatureDate">Date:</label>
+                    <input type="date" id="signatureDate">
+                </div>
+                
+                <div class="input-group">
+                    <label for="oneWord">One word that captures how this feels:</label>
+                    <input type="text" id="oneWord" placeholder="Hopeful? Empowered? Ready?">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="finalReflection">Final Reflection:</label>
+                <textarea id="finalReflection" placeholder="What's one last insight or feeling you want to capture about this process?"></textarea>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <button class="btn" onclick="app.summarizeReflection()">✨ Summarize My Journey ✨</button>
+                <div id="summaryInsight" class="ai-response-box" style="display: none;"></div>
+            </div>
+
+            <div class="final-reflection">
+                <h3>Congratulations!</h3>
+                <p>You've completed your Clarity Map. This isn't a one-time exercise; it's a living document. Revisit it whenever you feel stuck or need to re-align. Your clarity will deepen with each reflection.</p>
+            </div>
+
+            <div class="section-nav">
+                <button class="btn btn-secondary" onclick="app.showSection('roadmap')">← Back</button>
+                <button class="btn" onclick="app.showSection('welcome')">Start Over</button>
+                <button class="btn btn-secondary" onclick="app.exportJournal()">Export Journal</button>
+            </div>
+        `;
+    }
+
+    /**
+     * Initialize section-specific features
+     * @param {string} sectionId - Section ID
+     */
+    initializeSectionFeatures(sectionId) {
+        switch (sectionId) {
+            case 'mapping':
+                this.populateMapElements();
+                break;
+            case 'commitment':
+                this.setupNameUpdater();
+                this.setCurrentDate();
+                break;
         }
-        this.showSection(this.currentSection);
     }
 
     /**
-     * Render the navigation buttons
+     * Populate section with saved data
+     * @param {string} sectionId - Section ID
      */
-    renderNavigation() {
-        const navigation = Utils.getElementById('navigation');
-        if (!navigation) {
-            console.error('Navigation element not found');
+    populateSectionData(sectionId) {
+        const sectionData = this.journalData.getSection(sectionId);
+        
+        // Auto-populate from previous sections
+        this.journalData.setupAutoPopulation(sectionId);
+        
+        // Populate saved data
+        Object.keys(sectionData).forEach(fieldId => {
+            const element = Utils.getElementById(fieldId);
+            const value = sectionData[fieldId];
+            
+            if (element && value !== undefined) {
+                if (element.type === 'checkbox') {
+                    element.checked = value;
+                } else if (element.tagName === 'SELECT') {
+                    element.value = value;
+                } else if (fieldId === 'lifeAreas' && Array.isArray(value)) {
+                    // Handle checkbox groups
+                    value.forEach(area => {
+                        const checkbox = Utils.getElementById(`area-${area}`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                } else {
+                    element.value = value;
+                }
+            }
+        });
+    }
+
+    /**
+     * Save current section data
+     */
+    saveCurrentSectionData() {
+        const section = Utils.getElementById(this.currentSection);
+        if (!section) return;
+
+        const sectionData = {};
+        const inputs = section.querySelectorAll('input, textarea, select');
+        
+        inputs.forEach(input => {
+            if (input.id) {
+                if (input.type === 'checkbox') {
+                    if (input.name === 'lifeAreas') {
+                        // Handle checkbox groups
+                        if (!sectionData.lifeAreas) sectionData.lifeAreas = [];
+                        if (input.checked) {
+                            sectionData.lifeAreas.push(input.value);
+                        }
+                    } else {
+                        sectionData[input.id] = input.checked;
+                    }
+                } else {
+                    sectionData[input.id] = input.value;
+                }
+            }
+        });
+
+        this.journalData.saveSection(this.currentSection, sectionData);
+    }
+
+    /**
+     * Populate map elements in mapping section
+     */
+    populateMapElements() {
+        const mapEnergyGivers = document.getElementById('mapEnergyGivers');
+        const mapEnergyDrainers = document.getElementById('mapEnergyDrainers');
+        const mapPattern = document.getElementById('mapPattern');
+        
+        if (mapEnergyGivers) {
+            const giver1 = this.journalData.getField('connections', 'energyGiver1');
+            const giver2 = this.journalData.getField('connections', 'energyGiver2');
+            mapEnergyGivers.textContent = [giver1, giver2].filter(Boolean).join(', ');
+        }
+        
+        if (mapEnergyDrainers) {
+            const drainer1 = this.journalData.getField('connections', 'energyDrainer1');
+            const drainer2 = this.journalData.getField('connections', 'energyDrainer2');
+            mapEnergyDrainers.textContent = [drainer1, drainer2].filter(Boolean).join(', ');
+        }
+        
+        if (mapPattern) {
+            const pattern = this.journalData.getField('connections', 'strongestPattern');
+            mapPattern.textContent = pattern;
+        }
+    }
+
+    /**
+     * Setup name updater for commitment section
+     */
+    setupNameUpdater() {
+        const nameInput = Utils.getElementById('yourName');
+        const pledgeName = Utils.getElementById('pledgeName');
+        
+        if (nameInput && pledgeName) {
+            nameInput.addEventListener('input', () => {
+                pledgeName.textContent = nameInput.value || '[Your Name]';
+            });
+            
+            // Set initial value if exists
+            const savedName = this.journalData.getField('commitment', 'yourName');
+            if (savedName) {
+                nameInput.value = savedName;
+                pledgeName.textContent = savedName;
+            }
+        }
+    }
+
+    /**
+     * Set current date in commitment section
+     */
+    setCurrentDate() {
+        const dateInput = Utils.getElementById('signatureDate');
+        if (dateInput && !dateInput.value) {
+            dateInput.value = new Date().toISOString().split('T')[0];
+        }
+    }
+
+    /**
+     * Update active navigation button
+     */
+    updateActiveNavButton() {
+        const navButtons = document.querySelectorAll('.nav-btn');
+        navButtons.forEach(button => {
+            button.classList.remove('active');
+            if (button.onclick && button.onclick.toString().includes(this.currentSection)) {
+                button.classList.add('active');
+            }
+        });
+    }
+
+    /**
+     * Bind global event handlers
+     */
+    bindGlobalEvents() {
+        // Auto-save on form changes
+        document.addEventListener('input', Utils.debounce((event) => {
+            if (event.target.matches('input, textarea, select')) {
+                this.handleFieldChange(event.target);
+            }
+        }, 1000));
+
+        // Handle form submissions
+        document.addEventListener('submit', (event) => {
+            event.preventDefault();
+        });
+
+        // Handle window beforeunload
+        window.addEventListener('beforeunload', () => {
+            this.saveCurrentSectionData();
+        });
+    }
+
+    /**
+     * Handle individual field changes
+     * @param {HTMLElement} field - Changed field
+     */
+    handleFieldChange(field) {
+        if (!field.id) return;
+        
+        let value = field.value;
+        if (field.type === 'checkbox') {
+            value = field.checked;
+        }
+        
+        this.journalData.saveField(this.currentSection, field.id, value);
+    }
+
+    /**
+     * Setup auto-save functionality
+     */
+    setupAutoSave() {
+        // Auto-save every 30 seconds
+        setInterval(() => {
+            this.saveCurrentSectionData();
+        }, 30000);
+    }
+
+    /**
+     * Setup keyboard shortcuts
+     */
+    setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (event) => {
+            // Only handle shortcuts when not in input fields
+            if (event.target.matches('input, textarea, select')) return;
+            
+            if (event.ctrlKey || event.metaKey) {
+                switch (event.key) {
+                    case 's':
+                        event.preventDefault();
+                        this.saveCurrentSectionData();
+                        Utils.showToast('Progress saved!', 'success', 2000);
+                        break;
+                    case 'ArrowRight':
+                        event.preventDefault();
+                        this.navigateNext();
+                        break;
+                    case 'ArrowLeft':
+                        event.preventDefault();
+                        this.navigatePrevious();
+                        break;
+                }
+            }
+        });
+    }
+
+    /**
+     * Navigate to next section
+     */
+    navigateNext() {
+        const nextSection = this.progressTracker.goToNextSection();
+        if (nextSection) {
+            this.showSection(nextSection);
+        }
+    }
+
+    /**
+     * Navigate to previous section
+     */
+    navigatePrevious() {
+        const prevSection = this.progressTracker.goToPreviousSection();
+        if (prevSection) {
+            this.showSection(prevSection);
+        }
+    }
+
+    /**
+     * Dispatch section change event
+     * @param {string} sectionId - New section ID
+     */
+    dispatchSectionChangeEvent(sectionId) {
+        const event = new CustomEvent('sectionChange', {
+            detail: { sectionId, timestamp: new Date() }
+        });
+        window.dispatchEvent(event);
+    }
+
+    /**
+     * Generate interactive map
+     */
+    generateMap() {
+        const mappingData = this.journalData.getSection('mapping');
+        this.mappingSystem.generateMap(mappingData);
+    }
+
+    /**
+     * Select pattern card
+     * @param {string} patternId - Pattern identifier
+     */
+    selectPattern(patternId) {
+        // Remove previous selections
+        document.querySelectorAll('.pattern-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        
+        // Select new pattern
+        const selectedCard = document.querySelector(`[onclick*="${patternId}"]`);
+        if (selectedCard) {
+            selectedCard.classList.add('selected');
+        }
+        
+        // Save selection
+        this.journalData.saveField('patterns', 'selectedPattern', patternId);
+    }
+
+    /**
+     * Uncover hidden patterns using AI
+     */
+    async uncoverHiddenPatterns() {
+        const influencesData = this.journalData.getSection('influences');
+        const targetElement = Utils.getElementById('patternsInsight');
+        
+        this.aiIntegration.handleAIButtonClick(
+            () => this.aiIntegration.generateInfluencesInsights(influencesData),
+            targetElement
+        );
+    }
+
+    /**
+     * Summarize reflection using AI
+     */
+    async summarizeReflection() {
+        const journalData = this.journalData.data;
+        const targetElement = Utils.getElementById('summaryInsight');
+        
+        this.aiIntegration.handleAIButtonClick(
+            () => this.aiIntegration.generateFinalReflection(journalData),
+            targetElement
+        );
+    }
+
+    /**
+     * Export journal data
+     */
+    exportJournal() {
+        try {
+            const exportData = this.journalData.exportData('text');
+            const blob = new Blob([exportData], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `clarity-map-${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            Utils.showToast('Journal exported successfully!', 'success');
+        } catch (error) {
+            console.error('Export failed:', error);
+            Utils.showToast('Export failed. Please try again.', 'error');
+        }
+    }
+
+    /**
+     * Show progress modal
+     */
+    showProgress() {
+        this.progressTracker.showProgressModal();
+    }
+
+    /**
+     * Reset all data (with confirmation)
+     */
+    resetJournal() {
+        if (confirm('Are you sure you want to reset all your journal data? This cannot be undone.')) {
+            this.journalData.clearAllData();
+            this.progressTracker.resetProgress();
+            this.showSection('welcome');
+            Utils.showToast('Journal reset successfully.', 'info');
+        }
+    }
+}
+
+// Initialize app when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    window.app = new ClarityMapApp();
+});
+
+// Make app available globally for onclick handlers
+window.ClarityMapApp = ClarityMapApp;
