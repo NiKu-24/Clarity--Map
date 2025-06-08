@@ -282,7 +282,7 @@ Keep it personal, warm, and hopeful. Limit to 120 words.`;
             </div>
             <div style="display: flex; gap: var(--spacing-md); justify-content: flex-end; margin-top: var(--spacing-lg);">
                 <button class="btn btn-secondary" onclick="this.closest('.ai-config-modal').remove()">Cancel</button>
-                <button class="btn" onclick="window.aiIntegration.saveAPIKey()">Save & Enable</button>
+                <button class="btn" onclick="app.aiIntegration.saveAPIKey()">Save & Enable</button>
             </div>
         `);
 
