@@ -5,10 +5,11 @@
 
 class AIIntegration {
     constructor() {
-        this.apiKey = null; // Will store API key if explicitly set, or remain null for auto-injection
-        // IMPORTANT: Use gemini-2.0-flash for auto-injected API keys in this environment
+        this.apiKey = null;
+        // Keep gemini-2.0-flash as the model.
+        // We will explicitly pass the user-provided key.
         this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-        this.isEnabled = false; // Initial state, assumes AI is not available until API key is set or auto-injected
+        this.isEnabled = false; // Initial state, assumes AI is not available until API key is set
         this.requestQueue = [];
         this.isProcessing = false;
         
@@ -17,25 +18,11 @@ class AIIntegration {
 
     /**
      * Initialize API configuration
-     * For gemini-2.0-flash, the environment may auto-inject the key if `key` is an empty string.
-     * We'll keep the ability to store a key, but for this model, an empty string is preferred.
+     * Attempts to load a stored API key.
      */
     initializeAPI() {
-        // Attempt to get a stored API key.
-        // However, for gemini-2.0-flash, an empty string on the URL is often preferred for auto-injection.
-        const storedKey = this.getStoredAPIKey();
-        if (storedKey) {
-            this.apiKey = storedKey;
-            this.isEnabled = true;
-        } else {
-            // If no key is stored, and we are using gemini-2.0-flash, we rely on auto-injection.
-            // Mark as enabled if no specific key is required for this model, and the baseUrl is for the auto-injectable model.
-            if (this.baseUrl.includes('gemini-2.0-flash')) {
-                this.isEnabled = true; // Assume available due to auto-injection
-            } else {
-                this.isEnabled = false; // Not enabled if no key and not an auto-injectable model
-            }
-        }
+        this.apiKey = this.getStoredAPIKey();
+        this.isEnabled = !!this.apiKey; // Enabled only if a key is found
     }
 
     /**
@@ -52,28 +39,28 @@ class AIIntegration {
      * @returns {boolean} True if successfully set
      */
     setAPIKey(apiKey) {
-        if (!apiKey || typeof apiKey !== 'string') {
-            Utils.showToast('Invalid API key format (must be a non-empty string)', 'error');
+        if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
+            Utils.showToast('API Key cannot be empty. Please enter a valid key.', 'error');
             return false;
         }
 
-        this.apiKey = apiKey;
+        this.apiKey = apiKey.trim();
         this.isEnabled = true;
         
-        // Store securely (in production, consider encryption)
-        Utils.storage.set('clarityMap_aiApiKey', apiKey);
+        Utils.storage.set('clarityMap_aiApiKey', this.apiKey);
+        Utils.showToast('AI insights enabled!', 'success');
+        document.querySelector('.ai-config-modal')?.remove(); // Close modal on success
         
         return true;
     }
 
     /**
      * Check if AI features are available
-     * Checks if a key is stored OR if it's the auto-injectable model.
+     * AI is available only if a valid API key is currently set.
      * @returns {boolean} True if AI is available
      */
     isAvailable() {
-        // AI is available if a key is explicitly stored, or if it's the auto-injectable model.
-        return (this.apiKey !== null && this.apiKey !== '') || this.baseUrl.includes('gemini-2.0-flash');
+        return !!this.apiKey && this.apiKey.length > 0;
     }
 
     /**
@@ -83,7 +70,8 @@ class AIIntegration {
      */
     async generateInfluencesInsights(influencesData) {
         if (!this.isAvailable()) {
-            return this.getFallbackMessage('insights');
+            this.showConfigModal(); // Prompt for key if not available
+            return this.getFallbackMessage('insights'); // Return fallback immediately
         }
 
         const prompt = this.buildInfluencesPrompt(influencesData);
@@ -104,7 +92,8 @@ class AIIntegration {
      */
     async generateFinalReflection(journalData) {
         if (!this.isAvailable()) {
-            return this.getFallbackMessage('reflection');
+            this.showConfigModal(); // Prompt for key if not available
+            return this.getFallbackMessage('reflection'); // Return fallback immediately
         }
 
         const prompt = this.buildReflectionPrompt(journalData);
@@ -168,7 +157,7 @@ Keep it personal, warm, and hopeful. Limit to 120 words.`;
 
     /**
      * Make API request to Gemini
-     * Dynamically determines API key to use based on model.
+     * Always uses the stored API key.
      * @param {string} prompt - The prompt to send
      * @returns {Promise<string>} API response
      */
@@ -187,10 +176,8 @@ Keep it personal, warm, and hopeful. Limit to 120 words.`;
             }
         };
 
-        // Determine API key to use based on the model in baseUrl
-        // If it's gemini-2.0-flash, use an empty string for auto-injection by the environment.
-        // Otherwise, use the stored apiKey.
-        const apiKeyToUse = this.baseUrl.includes('gemini-2.0-flash') ? "" : this.apiKey;
+        // Explicitly use this.apiKey
+        const apiKeyToUse = this.apiKey;
 
         const response = await fetch(`${this.baseUrl}?key=${apiKeyToUse}`, {
             method: 'POST',
@@ -264,9 +251,9 @@ Keep it personal, warm, and hopeful. Limit to 120 words.`;
             
             reflection: `You've completed a meaningful journey of self-discovery. The patterns you've uncovered and the commitment you've made are stepping stones toward the life you want. Trust your insights and take the next small step when you're ready.`,
             
-            insights_error: `AI insights aren't available right now, but your own reflections are the most valuable part of this process. Take a moment to look for patterns in what you've written—what surprises you most? (Error: API call failed or response was unexpected.)`,
+            insights_error: `AI insights aren't available right now, but your own reflections are the most valuable part of this process. Please ensure your API key is valid and try again. (Error: API call failed or response was unexpected.)`,
             
-            reflection_error: `While AI summary isn't available, you've done the real work of understanding your patterns and making a commitment to change. That's what creates lasting transformation. (Error: API call failed or response was unexpected.)`
+            reflection_error: `While AI summary isn't available, you've done the real work of understanding your patterns and making a commitment to change. That's what creates lasting transformation. Please ensure your API key is valid and try again. (Error: API call failed or response was unexpected.)`
         };
         
         return messages[type] || 'Your insights are the most important part of this journey.';
@@ -322,6 +309,11 @@ Keep it personal, warm, and hopeful. Limit to 120 words.`;
         // Focus on input
         setTimeout(() => {
             Utils.getElementById('aiApiKey')?.focus();
+            // Pre-fill if a key was previously saved
+            const currentKey = this.getStoredAPIKey();
+            if (currentKey) {
+                Utils.getElementById('aiApiKey').value = currentKey;
+            }
         }, 100);
     }
 
@@ -337,19 +329,8 @@ Keep it personal, warm, and hopeful. Limit to 120 words.`;
             return;
         }
 
-        // Only store if it's not the auto-injectable model.
-        // For gemini-2.0-flash, we typically don't need to explicitly store it.
-        if (this.baseUrl.includes('gemini-2.0-flash')) {
-             // If the base URL is for the auto-injectable model, we just confirm enablement.
-            this.isEnabled = true;
-            Utils.showToast('AI insights enabled! (Key not explicitly stored for this model)', 'success');
-            document.querySelector('.ai-config-modal')?.remove();
-        } else if (this.setAPIKey(apiKey)) {
-            Utils.showToast('AI insights enabled!', 'success');
-            document.querySelector('.ai-config-modal')?.remove();
-        } else {
-            // setAPIKey already shows an error toast
-        }
+        // Call setAPIKey directly with the input value
+        this.setAPIKey(apiKey);
     }
 
     /**
@@ -370,6 +351,7 @@ Keep it personal, warm, and hopeful. Limit to 120 words.`;
             targetElement.innerHTML = `<p>${insights}</p>`;
         } catch (error) {
             console.error('Error showing insights:', error);
+            // Show a more informative error message
             targetElement.innerHTML = `<p>${this.getFallbackMessage('insights_error')}</p>`;
         }
     }
@@ -382,7 +364,7 @@ Keep it personal, warm, and hopeful. Limit to 120 words.`;
     handleAIButtonClick(insightFunction, targetElement) {
         if (!this.isAvailable()) {
             this.showConfigModal();
-            return;
+            return; // Stop here if AI is not available and modal is shown
         }
 
         this.showInsightsWithLoading(targetElement, insightFunction);
